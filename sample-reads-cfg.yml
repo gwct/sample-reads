@@ -1,0 +1,29 @@
+#############################################################################
+# Configuration information for using the sample_reads snakemake pipeline
+#############################################################################
+
+project_dir: /n/holylfs05/LABS/informatics/Everyone/for-blogeman/Split_BAM_TEST/
+# The main project directory that holds sub-directories and BAM files to sample and split
+
+subdirs: ["VirginFemales", "VirginMales"]
+# The subdirectories within each directory in the project_dir to look for BAM files
+
+bam_name: MergedBAMSorted.bam
+# The name of the BAM file to use in the subdirs
+# For now this assumes they are all named the same, but could be generalized
+
+num_split: 2
+# The number of chunks to split each BAM file into
+
+random_seed: { 2: 1234 }
+# The seeds to use for shuffling the lists of CBxRG combinations for sampling
+# Set up as a dictionary with lookup based on num_split, so it is easy to add
+# values to, e.g. { 2: 1234, 3 : 2222 }
+
+out_prefix: pseudobulk
+# A prefix for output BAMS
+# Full name will be: [out_prefix]-[num_split]-[current split].bam
+
+log_dir: logs/
+slurm_log_dir: slurm-logs/
+# Directories to save log files for each command and submitted job
