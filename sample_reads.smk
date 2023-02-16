@@ -82,6 +82,11 @@ rule sample_tags:
         random.seed(params.seed)
         ## Import the random module and set the seed
 
+        search_mode = "grep";
+        assert search_mode in ["grep", "samtools"], "\n**invalid search mode: " + search_mode;
+        # Whether to use samtools or grep to extract the reads in the next rule, note that samtools
+        # takes way too long
+
         barcodes = open(input.barcodes, "r").read().split("\n")[:-1]
         barcodes = list(set([ barcode[:barcode.rfind(":")] for barcode in barcodes ]))
         barcodes.sort()
@@ -113,15 +118,20 @@ rule sample_tags:
                     # Write each barcode to the current sample file
 
                     cb, rg = barcode.split("\t");
-                    cb = cb[5:];
-                    # Remove the tag label and Type portion (e.g. Z:) of the CB tag
-                    # Assumes CB tag always begins CB:Z:
 
-                    rg = rg[5:];
-                    # Remove the tag label and Type portion (e.g. Z:) of the RG tag
-                    # Assumes RG tag always beings RG:Z:
+                    if search_mode == "grep":
+                        cur_filter_str = "\"" + cb + ".*" + rg + ":*\"";
+                    elif search_mode == "samtools":
+                        cb = cb[5:];
+                        # Remove the tag label and Type portion (e.g. Z:) of the CB tag
+                        # Assumes CB tag always begins CB:Z:
 
-                    cur_filter_str = "([CB]==\"" + cb + "\" && [RG]=~\"" + rg + "*\")";
+                        rg = rg[5:];
+                        # Remove the tag label and Type portion (e.g. Z:) of the RG tag
+                        # Assumes RG tag always beings RG:Z:
+
+                        cur_filter_str = "([CB]==\"" + cb + "\" && [RG]=~\"" + rg + "*\")";
+
                     filters.append(cur_filter_str);
                     # Construct a filter string for this combination of tags in samtools - syntax
                     # For read group, we use a regular expression (with =~) at the end of the string (*) to 
@@ -133,8 +143,12 @@ rule sample_tags:
             # Define the output file listing with the filter strings for this subset
 
             with open(cur_filter_file, "w") as filterfile:
-                filters = "'" + " || ".join(filters) + "'";
-                filterfile.write(filters);
+                if search_mode == "grep":
+                    filters = " -e ".join(filters);
+                    filterfile.write("-e " + filters);            
+                elif search_mode == "samtools":
+                    filters = "'" + " || ".join(filters) + "'";
+                    filterfile.write(filters);
             ## Join and write the filter strings
         ## End subset loop
 
@@ -151,12 +165,22 @@ rule extract_reads:
     output:
         os.path.join(project_dir, "{project_subdir}", "{subdir}", output_prefix + "-" + str(num_split) + "-{cur_split}.bam")
     resources:
-        cpus = 1
+        cpus = 1,
+        mem = "48g",
+        time = "24:00:00"
     shell:
         """
         filter=$( cat {input.filter_file} )
-        cmd="samtools view --threads {resources.cpus} -e $filter {input.bam} > {output}"
+        # Read the filter for the current CBxRG sample and BAM file
+
+        cmd="samtools view -h --threads {resources.cpus} {input.bam} | grep -E -e '^@' $filter | samtools view -b -o {output} -"
+        # Command if using grep
+
+        #cmd="samtools view -h --threads {resources.cpus} -e $filter -b -o {output} {input.bam}"
+        # Command if using samtools (takes too long!)
+
         eval $cmd
+        # Execute the command
         """
 
 # Rule to extract reads based on the sampling in sample_tags by using samtools view -e filters
