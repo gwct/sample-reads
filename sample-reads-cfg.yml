@@ -24,6 +24,5 @@ out_prefix: pseudobulk
 # A prefix for output BAMS
 # Full name will be: [out_prefix]-[num_split]-[current split].bam
 
-log_dir: logs/
 slurm_log_dir: slurm-logs/
 # Directories to save log files for each command and submitted job

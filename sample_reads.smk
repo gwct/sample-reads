@@ -33,13 +33,7 @@ localrules: all
 rule all:
     input:
         expand(os.path.join(project_dir, "{project_subdir}", "{subdir}", output_prefix + "-" + str(num_split) + "-{cur_split}.bam"), project_subdir=project_subdirs, subdir=subdirs, cur_split=split_list)
-        #expand(os.path.join(project_dir, "{project_subdir}", "{subdir}", "pseudobulk-" + str(num_split) + "-{cur_split}-sample.txt"), project_subdir=project_subdirs, subdir=subdirs, cur_split=split_list),
-        #expand(os.path.join(project_dir, "{project_subdir}", "{subdir}", "pseudobulk-" + str(num_split) + "-{cur_split}-filter.txt"), project_subdir=project_subdirs, subdir=subdirs, cur_split=split_list)
 
-        
-
-        #expand(os.path.join(project_dir, "{project_subdir}", "{subdir}", "pseudobulk-" + str(num_split) + "-barcodes.txt"), project_subdir=project_subdirs, subdir=subdirs)
-        
 # The final rule (all), the "input" of which should be the final desired
 # files from the pipeline
 #############################################################################
